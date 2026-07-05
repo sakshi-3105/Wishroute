@@ -20,6 +20,28 @@ export default function Chatbot() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Update greeting if there's an active destination in session storage
+  useEffect(() => {
+    if (open) {
+      const activeDest = typeof window !== "undefined" ? sessionStorage.getItem("activeDestination") : null;
+      if (activeDest) {
+        setMessages(prev => {
+          if (prev.length === 1 && prev[0].text.startsWith("Hi there!")) {
+            return [
+              {
+                id: 1,
+                sender: "bot",
+                text: `Hi there! 👋 I see you're exploring a trip to ${activeDest}! ✈️ I can help you with local restaurant recommendations, transport advice, packing tips, or travel guidelines. What would you like to know?`,
+                timestamp: new Date()
+              }
+            ];
+          }
+          return prev;
+        });
+      }
+    }
+  }, [open]);
+
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,13 +74,25 @@ export default function Chatbot() {
 
     // Simulate bot response delay
     setTimeout(() => {
-      const botResponses = [
+      const activeDest = typeof window !== "undefined" ? sessionStorage.getItem("activeDestination") : null;
+      
+      let botResponses = [
         "That's a great question! I'd love to help you with your travel plans. 🗺️",
         "Let me help you find the perfect destination for your budget and preferences! ✈️",
         "I can assist you with itineraries, budget planning, and destination recommendations. What interests you most?",
         "Tell me more about your travel preferences - adventure, relaxation, culture, or cuisine? 🌍",
         "I'm here to make your trip planning easier! What specific help do you need?"
       ];
+
+      if (activeDest) {
+        botResponses = [
+          `That's a great question regarding your trip to ${activeDest}! I recommend trying the local street food and checking out regional historic landmarks. 🍜`,
+          `I can definitely assist with your plans for ${activeDest}. Are you looking for popular hotspots or quiet, off-the-beaten-path locations? 🌿`,
+          `A vacation to ${activeDest} sounds wonderful! Be sure to pack comfortable shoes, as you'll want to explore a lot on foot. 🚶‍♂️`,
+          `For ${activeDest}, it's often best to check if you need any local transport cards or advanced booking for top sights. Let me know if you want details! 🎫`,
+          `I'm here to help make your journey to ${activeDest} unforgettable! Ask me about packing checkups, weather, or custom activities.`
+        ];
+      }
       
       const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
       
@@ -71,7 +105,7 @@ export default function Chatbot() {
 
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
-    }, 1500);
+    }, 1200);
   };
 
   const formatTime = (timestamp) => {

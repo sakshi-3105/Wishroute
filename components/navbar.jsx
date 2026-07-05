@@ -12,9 +12,9 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 w-full z-50 bg-[#122B41] backdrop-blur-md border-b border-white/30">
       <nav className="relative h-16 flex items-center justify-between px-4 md:px-8">
         {/* Brand */}
-        <h1 className="text-2xl md:text-3xl text-white font-playfair hover:scale-105 transition-transform duration-300">
+        <Link href="/" className="text-2xl md:text-3xl text-white font-playfair hover:scale-105 transition-transform duration-300 cursor-pointer">
           WishRoute
-        </h1>
+        </Link>
 
         {/* Hamburger for mobile */}
         <button

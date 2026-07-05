@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Utility function for class names
 const cn = (...classes) => classes.filter(Boolean).join(' ');
@@ -37,6 +38,7 @@ const Button = React.forwardRef(
     );
   }
 );
+Button.displayName = "Button";
 
 // Enhanced Input Component
 const Input = React.forwardRef(
@@ -54,6 +56,7 @@ const Input = React.forwardRef(
     );
   }
 );
+Input.displayName = "Input";
 
 // Enhanced Popover Components
 const Popover = ({ children }) => {
@@ -62,17 +65,21 @@ const Popover = ({ children }) => {
   return (
     <div className="relative">
       {React.Children.map(children, child => 
-        React.cloneElement(child, { isOpen, setIsOpen })
+        React.isValidElement(child) 
+          ? React.cloneElement(child, { isOpen, setIsOpen })
+          : child
       )}
     </div>
   );
 };
 
 const PopoverTrigger = ({ children, isOpen, setIsOpen }) => {
-  return React.cloneElement(children, { 
-    onClick: () => setIsOpen(!isOpen),
-    'aria-expanded': isOpen 
-  });
+  return React.isValidElement(children) 
+    ? React.cloneElement(children, { 
+        onClick: () => setIsOpen(!isOpen),
+        'aria-expanded': isOpen 
+      })
+    : children;
 };
 
 const PopoverContent = ({ children, isOpen, className }) => {
@@ -108,7 +115,7 @@ const Slider = ({ value, onValueChange, min, max, step }) => {
           }}
         />
         <div 
-          className="absolute top-1/2 w-5 h-5 bg-white border-2 border-orange-500 rounded-full transform -translate-y-1/2 shadow-sm"
+          className="absolute top-1/2 w-5 h-5 bg-white border-2 border-orange-500 rounded-full transform -translate-y-1/2 shadow-sm pointer-events-none"
           style={{ left: `calc(${percentage}% - 10px)` }}
         />
       </div>
@@ -120,39 +127,94 @@ const Slider = ({ value, onValueChange, min, max, step }) => {
 };
 
 export default function ItineraryGenerator() {
+  const router = useRouter();
   const [where, setWhere] = useState("");
   const [duration, setDuration] = useState([5]);
-  const [budget, setBudget] = useState([10000]);
+  const [budget, setBudget] = useState([30000]);
   const [guests, setGuests] = useState(1);
+  const [startDate, setStartDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  });
+  const [preferences, setPreferences] = useState([]);
+
+  const availablePreferences = [
+    { id: "adventure", label: "Adventure ⛰️" },
+    { id: "culture", label: "Culture & History 🏛️" },
+    { id: "food", label: "Food & Cuisine 🍜" },
+    { id: "nature", label: "Nature & Wildlife 🌿" },
+    { id: "shopping", label: "Shopping 🛍️" },
+    { id: "relaxation", label: "Relaxation 🏖️" },
+  ];
+
+  const togglePreference = (prefId) => {
+    setPreferences(prev =>
+      prev.includes(prefId)
+        ? prev.filter(p => p !== prefId)
+        : [...prev, prefId]
+    );
+  };
+
+  const handleSearch = () => {
+    if (!where.trim()) {
+      alert("Please enter a destination!");
+      return;
+    }
+    const params = new URLSearchParams({
+      destination: where,
+      duration: duration[0].toString(),
+      budget: budget[0].toString(),
+      guests: guests.toString(),
+      startDate: startDate,
+      preferences: preferences.join(",")
+    });
+    router.push(`/plan?${params.toString()}`);
+  };
 
   return (
-    <div className="items-center justify-center px-4 sm:px-6 md:px-8">
-      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-14">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="items-center justify-center px-2 sm:px-4">
+      <div className="w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-5 sm:p-6 mb-14 text-gray-800">
+        
+        {/* Main Grid Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-5">
           
           {/* Where Input */}
           <div className="flex flex-col text-left flex-1 min-w-0">
-            <label className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Where
             </label>
             <Input
-              placeholder="Destination"
+              placeholder="e.g. Tokyo, Paris, Bali"
               value={where}
               onChange={(e) => setWhere(e.target.value)}
               className="text-base font-medium"
             />
           </div>
 
+          {/* Start Date */}
+          <div className="flex flex-col text-left flex-1 min-w-0">
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+              Start Date
+            </label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="text-base font-medium"
+            />
+          </div>
+
           {/* Duration Slider in Popover */}
-          <div className="flex flex-col flex-1 min-w-0">
-            <label className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
+          <div className="flex flex-col flex-1 min-w-0 text-left">
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Duration
             </label>
             <Popover>
               <PopoverTrigger>
                 <Button 
                   variant="outline" 
-                  className="w-full flex flex-col items-start h-auto py-2 hover:shadow-sm"
+                  className="w-full flex flex-col items-start justify-center h-10 py-1 hover:shadow-sm"
                 >
                   <span className="text-base font-medium text-gray-900">
                     {duration[0]} days
@@ -161,7 +223,7 @@ export default function ItineraryGenerator() {
               </PopoverTrigger>
               <PopoverContent>
                 <div className="space-y-0.5">
-                  <div className="text-sm font-medium text-gray-700 text-center">
+                  <div className="text-sm font-medium text-gray-700 text-center mb-2">
                     Select Duration
                   </div>
                   <Slider
@@ -171,24 +233,21 @@ export default function ItineraryGenerator() {
                     value={duration}
                     onValueChange={setDuration}
                   />
-                  {/* <div className="text-xs text-gray-500 text-center">
-                    {duration[0]} day{duration[0] > 1 ? 's' : ''}
-                  </div> */}
                 </div>
               </PopoverContent>
             </Popover>
           </div>
 
           {/* Budget Slider in Popover */}
-          <div className="flex flex-col flex-1 min-w-0">
-            <label className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
+          <div className="flex flex-col flex-1 min-w-0 text-left">
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Budget
             </label>
             <Popover>
               <PopoverTrigger>
                 <Button 
                   variant="outline" 
-                  className="w-full flex flex-col items-start h-auto py-2 hover:shadow-sm"
+                  className="w-full flex flex-col items-start justify-center h-10 py-1 hover:shadow-sm"
                 >
                   <span className="text-base font-medium text-gray-900">
                     ₹ {budget[0].toLocaleString()}
@@ -197,19 +256,16 @@ export default function ItineraryGenerator() {
               </PopoverTrigger>
               <PopoverContent>
                 <div className="space-y-0.5">
-                  <div className="text-sm font-medium text-gray-700 text-center">
+                  <div className="text-sm font-medium text-gray-700 text-center mb-2">
                     Set Budget
                   </div>
                   <Slider
                     min={10000}
-                    max={150000}
-                    step={1000}
+                    max={300000}
+                    step={5000}
                     value={budget}
                     onValueChange={setBudget}
                   />
-                  {/* <div className="text-xs text-gray-500 text-center">
-                    ₹ {budget[0].toLocaleString()}
-                  </div> */}
                 </div>
               </PopoverContent>
             </Popover>
@@ -217,27 +273,56 @@ export default function ItineraryGenerator() {
 
           {/* Guests Input */}
           <div className="flex flex-col text-left flex-1 min-w-0">
-            <label className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Guests
             </label>
             <Input
               type="number"
               min={1}
               value={guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
+              onChange={(e) => setGuests(Math.max(1, Number(e.target.value)))}
               className="text-base font-medium text-center"
             />
           </div>
 
-          {/* Search Button */}
-          <div className="w-full md:w-auto">
-            <Button 
-              className="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-2.5 h-10 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
-            >
-              Search
-            </Button>
+        </div>
+
+        {/* Preferences Section */}
+        <div className="border-t border-gray-100 pt-4 mt-4 text-left">
+          <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+            Your Travel Style (Preferences)
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {availablePreferences.map((pref) => {
+              const isSelected = preferences.includes(pref.id);
+              return (
+                <button
+                  key={pref.id}
+                  type="button"
+                  onClick={() => togglePreference(pref.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? "bg-orange-500 border-orange-500 text-white shadow-sm"
+                      : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {pref.label}
+                </button>
+              );
+            })}
           </div>
         </div>
+
+        {/* Plan Button */}
+        <div className="flex justify-end mt-4">
+          <Button 
+            onClick={handleSearch}
+            className="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-2 h-11 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+          >
+            Plan My Trip ✨
+          </Button>
+        </div>
+
       </div>
 
       <style jsx>{`

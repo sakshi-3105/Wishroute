@@ -15,44 +15,17 @@ const backgroundImages = [
 
 export default function HomePage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
   const [currentImage, setCurrentImage] = useState(0)
-
-  useEffect(() => {
-    const token = typeof window !== "undefined" && localStorage.getItem("TM_T")
-    if (token) {
-      router.push("/table")
-    } else {
-      setLoading(false)
-    }
-  }, [router])
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % backgroundImages.length)
-    }, 8000) // Image changes every 5 seconds
+    }, 8000) // Image changes every 8 seconds
     return () => clearInterval(interval)
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="relative">
-          <div className="h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-200"></div>
-          <div className="absolute top-0 left-0 h-24 w-24 rounded-full border-t-8 border-b-8 border-primary animate-spin"></div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 z-20 w-full h-16 bg-white shadow flex items-center justify-between px-6">
-        <h1 className="text-lg font-bold">GlobeGuide</h1>
-        {/* Add navbar items if needed */}
-      </nav>
-
+    <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden">
       {/* Background Images */}
       {backgroundImages.map((img, idx) => (
         <div
@@ -67,12 +40,23 @@ export default function HomePage() {
         />
       ))}
 
-      {/* Itinerary Generator - slightly moved up */}
-      <div className="absolute bottom-20 left-0 z-10 w-full flex justify-center px-4 pb-8">
+      {/* Dark overlay for better text contrast */}
+      <div className="absolute inset-0 bg-black/45 z-5" />
+
+      {/* Itinerary Generator overlay */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 pb-12">
+        <div className="text-center mb-8 max-w-2xl px-4 text-white drop-shadow-md">
+          <h2 className="text-4xl md:text-5xl font-bold font-playfair mb-3 leading-tight">
+            Discover Your Next Adventure
+          </h2>
+          <p className="text-lg md:text-xl text-gray-200 font-light">
+            Create AI-powered itineraries customized for your preferences and budget
+          </p>
+        </div>
         <div className="w-full max-w-4xl">
           <ItineraryGenerator />
         </div>
-        <Chatbot/>
+        <Chatbot />
       </div>
     </div>
   )
